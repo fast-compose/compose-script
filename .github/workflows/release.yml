@@ -34,10 +34,11 @@ jobs:
           echo "ENGINE=$engine" >> $GITHUB_ENV
           echo "fast-compose $engine"
 
+      # COMPOSE_SCRIPT_VERSION makes the script load its .wasm files from this exact version (webpack.config.d).
       - name: Build
         run: |
           chmod +x gradlew
-          ./gradlew wasmJsBrowserDistribution -PfastComposeVersion=$ENGINE
+          COMPOSE_SCRIPT_VERSION=${VERSION#v} ./gradlew wasmJsBrowserDistribution -PfastComposeVersion=$ENGINE --no-build-cache
 
       - name: Package
         run: |
