@@ -110,6 +110,18 @@ within it; content larger than a fixed size is cut off. The composable still set
 
 Sizes from stylesheets or classes are not read; to size by class, put the script in an element with that class.
 
+### Layout
+
+The element sits in the text flow like an image (`display: inline-block`), so other elements can go beside it. For
+its own line, add `display: block` to the script's `style`.
+
+```html
+<script type="text/compose-content">
+  Button(onClick = {}) { Text("Click me") }
+</script>
+<label>Beside the button</label>
+```
+
 ## compose-preview
 
 The code is a whole Kotlin file. Every `@Composable` function with `@Preview` is shown with its name, size, background,

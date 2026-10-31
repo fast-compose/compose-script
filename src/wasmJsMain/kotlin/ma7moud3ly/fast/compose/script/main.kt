@@ -15,12 +15,12 @@ private const val CONTENT_TAG = "compose-content"
 
 /**
  * Default look of the tags. `:where` keeps their specificity at zero, so any page style overrides them.
- * Compose sizes its canvas from the tag, so a preview tag needs a height before it starts; a content tag gets its size
- * from its composable once measured.
+ * Compose sizes its canvas from the tag, so a preview tag needs a height before it starts. A content tag sits in the
+ * text flow like an image, starting at 1 × 1 px until its composable is measured.
  */
 private const val DEFAULT_STYLE = """
 :where($PREVIEW_TAG) { display: block; height: 400px; }
-:where($CONTENT_TAG) { display: block; height: 1px; }
+:where($CONTENT_TAG) { display: inline-block; width: 1px; height: 1px; }
 """
 
 /**

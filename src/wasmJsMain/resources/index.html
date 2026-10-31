@@ -47,6 +47,14 @@
     }
 </script>
 
+<p>Beside other elements:</p>
+<script type="text/compose-content" style="width: 120px; height: 80px; background: green">
+    Surface(color = Color.Red) {
+        Box(Modifier.fillMaxSize()) { Text("Hello") }
+    }
+</script>
+<label>A label beside it</label>
+
 <p>A whole file, showing the function named by <code>data-composable</code>:</p>
 <script type="text/compose-content" data-composable="Profile">
     data class User(val name: String, val role: String)
