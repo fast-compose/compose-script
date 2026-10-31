@@ -20,18 +20,24 @@ Add one script, write Compose in your HTML, and it renders in the page, powered 
 
 ## Quick start
 
+Add the library to your page:
+
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@fast-compose/compose-script/compose-script.js"></script>
-
-<script type="text/compose-content">
-  var count by remember { mutableStateOf<Int>(0) }
-  Button(onClick = { count++ }) { Text("Clicked $count times") }
-</script>
 ```
 
 - Load `compose-script.js` with a plain `<script src>`, not `type="module"`: it loads its `.wasm` files from its own URL.
 - The URL serves the latest version. To pin one, add it after the package name, e.g. `compose-script@X.Y.Z`. Each
   version is built with the newest Fast Compose release of its time, named in its npm description.
+
+Then write Compose anywhere in the page:
+
+```html
+<script type="text/compose-content">
+  var count by remember { mutableStateOf<Int>(0) }
+  Button(onClick = { count++ }) { Text("Clicked $count times") }
+</script>
+```
 
 ## Script types
 
@@ -92,6 +98,17 @@ must be a top-level `@Composable` function without parameters; the file may decl
 
 The composable sets the element's width and height, up to the width of its parent and the height of the window.
 Content that fills or scrolls needs a size in the code, e.g. `Modifier.height(300.dp)`.
+
+A `width` or `height` in the script's `style` attribute is kept, in any CSS unit, and the composable is measured
+within it; content larger than a fixed size is cut off. The composable still sets the side that is not given.
+
+```html
+<script type="text/compose-content" style="width: 200px">
+  Text("Wraps within 200 px, and the composable sets the height")
+</script>
+```
+
+Sizes from stylesheets or classes are not read; to size by class, put the script in an element with that class.
 
 ## compose-preview
 

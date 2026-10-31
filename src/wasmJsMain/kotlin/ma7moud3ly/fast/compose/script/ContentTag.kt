@@ -24,7 +24,8 @@ private const val CONTENT_ENTRY = "ComposeScriptContent"
 /**
  * The code of a `<compose-content>` tag, without previews, labels or frames. Without [entry], [source] is the body of a
  * composable; with it, [source] is a file and [entry] names its top-level `@Composable` function to show.
- * The composable sets the size of [tag]: up to the width of its parent and the height of the window.
+ * A `width` or `height` in the tag's `style` attribute is kept, and the content is measured within it. The composable
+ * sets the rest of the size: up to the width of the tag's parent and the height of the window.
  */
 @Composable
 internal fun ContentTag(tag: HTMLElement, source: String, entry: String?) {
@@ -33,16 +34,19 @@ internal fun ContentTag(tag: HTMLElement, source: String, entry: String?) {
         remember(source, entry) { if (entry != null) source else "@Composable fun $CONTENT_ENTRY() { $source\n}" }
     )
     val density = LocalDensity.current.density
-    var available by remember { mutableStateOf(availableSize(tag)) }
+    // Read before the composable's size is written into the same style.
+    val fixed = remember(tag) { FixedSize(tag.style.width.isNotEmpty(), tag.style.height.isNotEmpty()) }
+    var available by remember { mutableStateOf(availableSize(tag, fixed)) }
     LaunchedEffect(tag) {
-        window.addEventListener("resize", { available = availableSize(tag) })
+        window.addEventListener("resize", { available = availableSize(tag, fixed) })
     }
     Column(
         Modifier
             .measureWithin((available.first * density).roundToInt(), (available.second * density).roundToInt())
             .onSizeChanged { size ->
-                tag.style.width = "${size.width / density}px"
-                tag.style.height = "${size.height / density}px"
+                if (fixed.width && fixed.height) return@onSizeChanged
+                if (!fixed.width) tag.style.width = "${size.width / density}px"
+                if (!fixed.height) tag.style.height = "${size.height / density}px"
                 notifyResize()
             }
     ) {
@@ -51,8 +55,16 @@ internal fun ContentTag(tag: HTMLElement, source: String, entry: String?) {
     }
 }
 
-/** Width inside the parent of [tag] and height of the window, in CSS pixels. */
-private fun availableSize(tag: HTMLElement): Pair<Int, Int> = parentContentWidth(tag) to window.innerHeight
+/** Whether the tag's `style` attribute sets its width and height. */
+private data class FixedSize(val width: Boolean, val height: Boolean)
+
+/**
+ * The size the content may take, in CSS pixels: the tag's own width and height where [fixed], otherwise the width inside
+ * the tag's parent and the height of the window.
+ */
+private fun availableSize(tag: HTMLElement, fixed: FixedSize): Pair<Int, Int> =
+    (if (fixed.width) tag.clientWidth else parentContentWidth(tag)) to
+        (if (fixed.height) tag.clientHeight else window.innerHeight)
 
 /**
  * Measures the content within [maxWidth] and [maxHeight] pixels instead of the viewport's own size, so its size does

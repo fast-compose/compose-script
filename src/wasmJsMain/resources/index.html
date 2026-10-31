@@ -33,6 +33,20 @@
     }
 </script>
 
+<p>A 500 dp box in <code>style="width: 200px"</code>, height from the composable:</p>
+<script type="text/compose-content" style="width: 200px">
+    Box(Modifier.size(500.dp, 100.dp).background(Color(0xFF134E4A)), contentAlignment = Alignment.Center) {
+        Text("Shrunk to 200 px", color = Color.White)
+    }
+</script>
+
+<p>The same box in <code>style="width: 300px; height: 60px"</code>:</p>
+<script type="text/compose-content" style="width: 300px; height: 60px">
+    Box(Modifier.size(500.dp, 100.dp).background(Color(0xFF514A9D)), contentAlignment = Alignment.Center) {
+        Text("300 × 60 px, cut off", color = Color.White)
+    }
+</script>
+
 <p>A whole file, showing the function named by <code>data-composable</code>:</p>
 <script type="text/compose-content" data-composable="Profile">
     data class User(val name: String, val role: String)
