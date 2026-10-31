@@ -1,0 +1,238 @@
+<!-- Showcase: animation, state, a small task app and @Preview, in plain HTML with Compose Script. -->
+<script src="https://cdn.jsdelivr.net/npm/@fast-compose/compose-script/compose-script.js"></script>
+
+<header>
+    <script type="text/compose-content" data-composable="Orbit">
+        @Composable
+        fun Orbit() {
+            val transition = rememberInfiniteTransition(label = "orbit")
+            val angle by transition.animateFloat(
+                initialValue = 0f,
+                targetValue = 360f,
+                animationSpec = infiniteRepeatable(tween(6000, easing = LinearEasing)),
+                label = "angle"
+            )
+            Canvas(Modifier.size(180.dp)) {
+                val radius = size.minDimension / 2 - 12.dp.toPx()
+                // The orbit: a thin ring, drawn as a circle with the page color inside.
+                drawCircle(color = Color(0x6634D399), radius = radius + 2.dp.toPx())
+                drawCircle(color = Color(0xFF0F172A), radius = radius - 2.dp.toPx())
+                drawCircle(
+                    brush = Brush.radialGradient(listOf(Color(0xFF34D399), Color(0xFF2563EB))),
+                    radius = radius * 0.45f
+                )
+                repeat(3) { i ->
+                    val radians = (angle + i * 120) * PI / 180
+                    drawCircle(
+                        color = Color(0xFF34D399),
+                        radius = 8.dp.toPx(),
+                        center = Offset(
+                            center.x + cos(radians).toFloat() * radius,
+                            center.y + sin(radians).toFloat() * radius
+                        )
+                    )
+                }
+            }
+        }
+    </script>
+    <h1>Jetpack Compose, live in HTML</h1>
+    <p>Every card below is real Compose code inside a &lt;script&gt; tag. No build, no server.</p>
+</header>
+
+<main>
+    <section class="card">
+        <h2>State and animation</h2>
+        <p>Drag the slider, flip the switch.</p>
+        <script type="text/compose-content">
+            var scale by remember { mutableStateOf(0.6f) }
+            var round by remember { mutableStateOf(true) }
+            val corner by animateDpAsState(if (round) 60.dp else 12.dp, label = "corner")
+            val color by animateColorAsState(
+                if (round) Color(0xFF34D399) else Color(0xFF6366F1),
+                label = "color"
+            )
+            Column(Modifier.width(260.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(Modifier.size(140.dp), contentAlignment = Alignment.Center) {
+                    Box(
+                        Modifier
+                            .size((40 + scale * 100).dp)
+                            .clip(RoundedCornerShape(corner))
+                            .background(color)
+                    )
+                }
+                Slider(value = scale, onValueChange = { scale = it })
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Switch(checked = round, onCheckedChange = { round = it })
+                    Spacer(Modifier.width(8.dp))
+                    Text(if (round) "Round" else "Square")
+                }
+            }
+        </script>
+    </section>
+
+    <section class="card">
+        <h2>A real little app</h2>
+        <p>Add, check and delete tasks.</p>
+        <script type="text/compose-content" data-composable="Tasks">
+            data class Task(val title: String, val done: Boolean = false)
+
+            @Composable
+            fun Tasks() {
+                val tasks = remember {
+                    mutableStateListOf(
+                        Task("Write Compose in HTML"),
+                        Task("Skip the build", done = true),
+                        Task("Share the page")
+                    )
+                }
+                var text by remember { mutableStateOf("") }
+                val done = tasks.count { it.done }
+                Column(Modifier.width(300.dp)) {
+                    Text("$done of ${tasks.size} done", fontWeight = FontWeight.Bold)
+                    LinearProgressIndicator(
+                        progress = { if (tasks.isEmpty()) 0f else done.toFloat() / tasks.size },
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedTextField(
+                            value = text,
+                            onValueChange = { text = it },
+                            label = { Text("New task") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(onClick = {
+                            if (text.isNotBlank()) {
+                                tasks.add(Task(text.trim()))
+                                text = ""
+                            }
+                        }) {
+                            Icon(Icons.Default.Add, contentDescription = "Add")
+                        }
+                    }
+                    tasks.forEachIndexed { i, task ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = task.done, onCheckedChange = { tasks[i] = task.copy(done = it) })
+                            Text(
+                                task.title,
+                                modifier = Modifier.weight(1f),
+                                textDecoration = if (task.done) TextDecoration.LineThrough else null
+                            )
+                            IconButton(onClick = { tasks.removeAt(i) }) {
+                                Icon(Icons.Default.Delete, contentDescription = "Delete")
+                            }
+                        }
+                    }
+                }
+            }
+        </script>
+    </section>
+
+    <section class="card wide">
+        <h2>@Preview, light and dark</h2>
+        <p>One composable, every preview shown side by side with its settings.</p>
+        <script type="text/compose-preview" style="height: 330px">
+            @Composable
+            fun Profile() {
+                var liked by remember { mutableStateOf(false) }
+                Card(Modifier.padding(16.dp).width(260.dp)) {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            Modifier.size(48.dp).clip(CircleShape)
+                                .background(Brush.linearGradient(listOf(Color(0xFF34D399), Color(0xFF2563EB)))),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("FC", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Fast Compose", fontWeight = FontWeight.Bold)
+                            Text("Compose without a compiler", style = MaterialTheme.typography.bodySmall)
+                        }
+                        IconButton(onClick = { liked = !liked }) {
+                            Icon(
+                                Icons.Default.Favorite,
+                                contentDescription = "Like",
+                                tint = if (liked) Color(0xFFEF4444) else Color.Gray
+                            )
+                        }
+                    }
+                }
+            }
+
+            @Preview(name = "Light", showBackground = true)
+            @Composable
+            fun LightProfile() {
+                Profile()
+            }
+
+            @Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true)
+            @Composable
+            fun DarkProfile() {
+                Profile()
+            }
+        </script>
+    </section>
+</main>
+
+
+<style>
+    body {
+        margin: 0;
+        padding: 32px 16px;
+        font-family: system-ui, sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+    }
+
+    header, main {
+        max-width: 960px;
+        margin: 0 auto;
+    }
+
+    header {
+        text-align: center;
+    }
+
+    header p {
+        color: #94a3b8;
+    }
+
+    main {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+    }
+
+    .card {
+        background: #f8fafc;
+        color: #0f172a;
+        border-radius: 20px;
+        padding: 20px;
+        text-align: center;
+    }
+
+    .card h2 {
+        margin: 0 0 4px;
+        font-size: 18px;
+    }
+
+    .card p {
+        margin: 0 0 12px;
+        color: #64748b;
+        font-size: 14px;
+    }
+
+    .wide {
+        grid-column: 1 / -1;
+    }
+
+    compose-content {
+        margin: 0 auto;
+    }
+
+    compose-preview {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+</style>

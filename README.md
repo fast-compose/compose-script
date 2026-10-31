@@ -39,6 +39,15 @@ Then write Compose anywhere in the page:
 </script>
 ```
 
+## Examples
+
+Try them live on CodePen:
+
+| Example | Shows|
+|---|---|
+| [Sound Wave](https://codepen.io/editor/ma7moud3ly/pen/01a191f5-6523-799c-81ed-a193e00bf1f2) | An animated wave in a few lines of Compose |
+| [Live Showcase](https://codepen.io/editor/ma7moud3ly/pen/01a191d9-c6a9-782f-a17c-9df79dc2063b) | Animation, state, a small task app and `@Preview` in light and dark |
+
 ## Script types
 
 | Type | Shows | Size |

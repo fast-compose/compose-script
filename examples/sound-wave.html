@@ -1,0 +1,32 @@
+<!-- Sound Wave: an animated Jetpack Compose wave in plain HTML, with Compose Script. -->
+<script src="https://cdn.jsdelivr.net/npm/@fast-compose/compose-script/compose-script.js"></script>
+
+<center>
+    <h3>Jetpack Compose, live in HTML</h3>
+
+    <script type="text/compose-content">
+        val transition = rememberInfiniteTransition(label = "wave")
+        val phase by transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 2 * PI.toFloat(),
+            animationSpec = infiniteRepeatable(tween(1500, easing = LinearEasing)),
+            label = "phase"
+        )
+        Row(
+            Modifier.height(140.dp).padding(horizontal = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            repeat(14) { i ->
+                val level = ((sin(phase + i * 0.45f) + 1) / 2).toFloat()
+                Box(
+                    Modifier
+                        .width(12.dp)
+                        .height((24 + level * 110).dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Brush.verticalGradient(listOf(Color(0xFF34D399), Color(0xFF2563EB))))
+                )
+            }
+        }
+    </script>
+</center>
