@@ -1,4 +1,4 @@
-# Push tag vX.Y.Z once fast-compose X.Y.Z is on Maven Central: builds compose-script with that engine version and
+# Push tag vX.Y.Z to release compose-script X.Y.Z: builds it with the newest fast-compose release on Maven Central and
 # publishes it to npm, which jsDelivr serves at
 # https://cdn.jsdelivr.net/npm/@fast-compose/compose-script@X.Y.Z/compose-script.js
 name: Release
@@ -26,10 +26,18 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v5
 
+      - name: Find the newest fast-compose release
+        run: |
+          metadata=https://repo1.maven.org/maven2/io/github/fast-compose/fast-compose/maven-metadata.xml
+          engine=$(curl -sf $metadata | sed -n 's:.*<release>\(.*\)</release>.*:\1:p')
+          test -n "$engine"
+          echo "ENGINE=$engine" >> $GITHUB_ENV
+          echo "fast-compose $engine"
+
       - name: Build
         run: |
           chmod +x gradlew
-          ./gradlew wasmJsBrowserDistribution -PfastComposeVersion=${VERSION#v}
+          ./gradlew wasmJsBrowserDistribution -PfastComposeVersion=$ENGINE
 
       - name: Package
         run: |
@@ -41,7 +49,7 @@ jobs:
           {
             "name": "@fast-compose/compose-script",
             "version": "${VERSION#v}",
-            "description": "Live Compose inside static HTML pages",
+            "description": "Live Compose inside static HTML pages, built with Fast Compose ${ENGINE}",
             "keywords": ["compose", "jetpack-compose", "kotlin", "wasm", "preview"],
             "homepage": "https://github.com/fast-compose/compose-script",
             "license": "Apache-2.0",
