@@ -1,0 +1,64 @@
+# Push tag vX.Y.Z once fast-compose X.Y.Z is on Maven Central: builds compose-script with that engine version and
+# publishes it to npm, which jsDelivr serves at
+# https://cdn.jsdelivr.net/npm/@fast-compose/compose-script@X.Y.Z/compose-script.js
+name: Release
+
+on:
+  push:
+    tags: [ "v*" ]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: zulu
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v5
+
+      - name: Build
+        run: |
+          chmod +x gradlew
+          ./gradlew wasmJsBrowserDistribution -PfastComposeVersion=${VERSION#v}
+
+      - name: Package
+        run: |
+          out=build/dist/wasmJs/productionExecutable
+          mkdir -p dist
+          cp $out/*.js $out/*.js.LICENSE.txt $out/*.wasm dist/
+          cp README.md LICENSE dist/
+          cat > dist/package.json <<JSON
+          {
+            "name": "@fast-compose/compose-script",
+            "version": "${VERSION#v}",
+            "description": "Live Compose inside static HTML pages",
+            "keywords": ["compose", "jetpack-compose", "kotlin", "wasm", "preview"],
+            "homepage": "https://github.com/fast-compose/compose-script",
+            "license": "Apache-2.0",
+            "repository": { "type": "git", "url": "git+https://github.com/fast-compose/compose-script.git" },
+            "main": "compose-script.js"
+          }
+          JSON
+          ls -la dist
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      # Trusted publishing: npm checks this workflow's identity, so no token is stored. It needs npm 11.5.1 or newer.
+      - name: Publish to npm
+        working-directory: dist
+        run: |
+          npm install -g npm@latest
+          npm publish --access public

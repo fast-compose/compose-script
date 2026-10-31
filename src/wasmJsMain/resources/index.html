@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compose Script</title>
+    <link type="text/css" rel="stylesheet" href="styles.css">
+    <script src="compose-script.js"></script>
+</head>
+<body>
+<h1>Compose Script</h1>
+
+<h2>compose-content</h2>
+
+<p>Code as the body of a composable, sized by that composable:</p>
+<script type="text/compose-content">
+    Column(Modifier.padding(16.dp)) {
+        Text("Hello from Compose!")
+        Button(onClick = {}) { Text("Click me") }
+    }
+</script>
+
+<p>With generics:</p>
+<script type="text/compose-content">
+    var count by remember { mutableStateOf<Int>(0) }
+    Button(onClick = { count++ }) { Text("Clicked $count times") }
+</script>
+
+<p>A fixed size from the composable:</p>
+<script type="text/compose-content">
+    Box(Modifier.size(200.dp, 100.dp).background(Color(0xFF6650A4)), contentAlignment = Alignment.Center) {
+        Text("200 × 100 dp", color = Color.White)
+    }
+</script>
+
+<p>A whole file, showing the function named by <code>data-composable</code>:</p>
+<script type="text/compose-content" data-composable="Profile">
+    data class User(val name: String, val role: String)
+
+    @Composable
+    fun UserRow(user: User) {
+        Column(Modifier.padding(8.dp)) {
+            Text(user.name)
+            Text(user.role, color = Color.Gray)
+        }
+    }
+
+    @Composable
+    fun Profile() {
+        Column {
+            UserRow(User("Ada", "Engineer"))
+            UserRow(User("Grace", "Admiral"))
+        }
+    }
+</script>
+
+<p>An error:</p>
+<script type="text/compose-content">
+    Text("Missing a parenthesis"
+</script>
+
+<h2>compose-preview</h2>
+
+<script type="text/compose-preview" style="height: 300px">
+    @Composable
+    fun Label(title: String) {
+        Text(title, Modifier.padding(16.dp))
+    }
+
+    @Preview(name = "Light", showBackground = true)
+    @Composable
+    fun LightLabel() {
+        Label("Light")
+    }
+
+    @Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true)
+    @Composable
+    fun DarkLabel() {
+        Label("Dark")
+    }
+</script>
+</body>
+</html>
