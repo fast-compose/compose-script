@@ -1,0 +1,246 @@
+<!-- Travel Explorer: a phone-sized travel screen with network images, a carousel and spring animations. -->
+<script src="https://cdn.jsdelivr.net/npm/@fast-compose/compose-script/compose-script.js"></script>
+<h3>Jetpack Compose Full Screen</h3>
+<script type="text/compose-content" data-composable="ExploreHomeScreen">
+    data class Destination(
+        val id: Int,
+        val title: String,
+        val location: String,
+        val rating: Double,
+        val imageUrl: String,
+        val description: String,
+    )
+
+    val destinations = listOf(
+        Destination(
+            id = 1,
+            title = "Kyoto Gardens",
+            location = "Kyoto, Japan",
+            rating = 4.9,
+            imageUrl = "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800&q=80",
+            description = "Tranquil bamboo groves, historic shrines and serene traditional gardens " +
+                "in the heart of Japan.",
+        ),
+        Destination(
+            id = 2,
+            title = "Amalfi Coast",
+            location = "Salerno, Italy",
+            rating = 4.8,
+            imageUrl = "https://images.unsplash.com/photo-1533105079780-92b9be482077?w=800&q=80",
+            description = "A dramatic coastline of pastel fishing villages perched on sheer cliffs " +
+                "above the Mediterranean.",
+        ),
+        Destination(
+            id = 3,
+            title = "Swiss Alps",
+            location = "Zermatt, Switzerland",
+            rating = 4.95,
+            imageUrl = "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?w=800&q=80",
+            description = "Breathtaking peaks with world-class skiing, hiking trails and cozy alpine chalets.",
+        ),
+    )
+
+    @Composable
+    fun ExploreHomeScreen() {
+        var selected by remember { mutableStateOf(destinations.first()) }
+        var isFavorite by remember { mutableStateOf(false) }
+
+        val favoriteScale by animateFloatAsState(
+            targetValue = if (isFavorite) 1.3f else 1f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow,
+            ),
+            label = "favoriteScale",
+        )
+        val overlayColor by animateColorAsState(
+            targetValue = Color.Black.copy(alpha = if (selected.id == 1) 0.7f else 0.6f),
+            animationSpec = tween(durationMillis = 600),
+            label = "overlayColor",
+        )
+
+        Box(
+            Modifier
+                .size(width = 390.dp, height = 720.dp)
+                .clip(RoundedCornerShape(32.dp))
+        ) {
+            // Background image
+            AsyncImage(
+                model = selected.imageUrl,
+                contentDescription = selected.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+
+            // Gradient for readable text
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color.Black.copy(alpha = 0.3f), Color.Transparent, overlayColor)
+                        )
+                    )
+            )
+
+            // Top bar
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = Color.White.copy(alpha = 0.25f),
+                    modifier = Modifier.size(44.dp),
+                ) {
+                    IconButton(onClick = {}) {
+                        Icon(Icons.Default.LocationOn, contentDescription = "Location", tint = Color.White)
+                    }
+                }
+                Surface(
+                    shape = CircleShape,
+                    color = Color.White.copy(alpha = 0.25f),
+                    modifier = Modifier
+                        .size(44.dp)
+                        .scale(favoriteScale),
+                ) {
+                    IconButton(onClick = { isFavorite = !isFavorite }) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Favorite",
+                            tint = if (isFavorite) Color.Red else Color.White,
+                        )
+                    }
+                }
+            }
+
+            // Details, carousel and button
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 24.dp)
+            ) {
+                AnimatedVisibility(
+                    visible = true,
+                    enter = fadeIn(animationSpec = tween(500)) + slideInVertically(initialOffsetY = { it / 2 }),
+                ) {
+                    Column(Modifier.padding(horizontal = 24.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Icon(
+                                Icons.Default.Star,
+                                contentDescription = "Rating",
+                                tint = Color(0xFFFFC107),
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Text(
+                                text = "${selected.rating}",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                            )
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            text = selected.title,
+                            color = Color.White,
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Icon(
+                                Icons.Default.LocationOn,
+                                contentDescription = null,
+                                tint = Color.White.copy(alpha = 0.8f),
+                                modifier = Modifier.size(16.dp),
+                            )
+                            Text(
+                                text = selected.location,
+                                color = Color.White.copy(alpha = 0.8f),
+                                fontSize = 14.sp,
+                            )
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            text = selected.description,
+                            color = Color.White.copy(alpha = 0.9f),
+                            fontSize = 14.sp,
+                            lineHeight = 20.sp,
+                            maxLines = 3,
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
+
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    items(destinations, key = { it.id }) { item ->
+                        DestinationCard(
+                            destination = item,
+                            isSelected = item.id == selected.id,
+                            onSelect = { selected = item },
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(20.dp))
+
+                Button(
+                    onClick = {},
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .padding(horizontal = 24.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                ) {
+                    Text(
+                        text = "Explore Experience",
+                        color = Color.Black,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Icon(Icons.Default.ArrowForward, contentDescription = "Explore", tint = Color.Black)
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun DestinationCard(destination: Destination, isSelected: Boolean, onSelect: () -> Unit) {
+        val borderWidth by animateDpAsState(
+            targetValue = if (isSelected) 3.dp else 0.dp,
+            animationSpec = spring(stiffness = Spring.StiffnessMedium),
+            label = "borderWidth",
+        )
+        Box(
+            Modifier
+                .size(width = 100.dp, height = 70.dp)
+                .clip(RoundedCornerShape(18.dp))
+                .background(if (isSelected) Color.White else Color.Transparent)
+                .clickable(onClick = onSelect)
+                .padding(borderWidth)
+                .clip(RoundedCornerShape(16.dp))
+        ) {
+            AsyncImage(
+                model = destination.imageUrl,
+                contentDescription = destination.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+    }
+</script>
