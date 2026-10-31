@@ -5,6 +5,7 @@ import androidx.compose.ui.window.ComposeViewport
 import kotlinx.browser.document
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLElement
+import org.w3c.dom.Node
 
 /** Shows every `@Preview` function of its code, with labels and frames. */
 private const val PREVIEW_TAG = "compose-preview"
@@ -32,12 +33,13 @@ fun main() {
     addStyle(DEFAULT_STYLE)
     onDomReady {
         val scripts = document.querySelectorAll("script[type='text/$PREVIEW_TAG'], script[type='text/$CONTENT_TAG']")
+        val bodyStart = document.body?.firstChild
         for (i in 0 until scripts.length) {
             val script = scripts.item(i) as? Element ?: continue
             val isPreview = script.getAttribute("type") == "text/$PREVIEW_TAG"
             val source = script.textContent.orEmpty().trimIndent()
             val entry = script.getAttribute("data-composable")?.trim()?.takeIf { it.isNotEmpty() }
-            val tag = replaceWithTag(script, if (isPreview) PREVIEW_TAG else CONTENT_TAG)
+            val tag = replaceWithTag(script, if (isPreview) PREVIEW_TAG else CONTENT_TAG, bodyStart)
             whenVisible(tag) {
                 ComposeViewport(tag) {
                     if (isPreview) PreviewTag(source) else ContentTag(tag, source, entry)
@@ -47,13 +49,22 @@ fun main() {
     }
 }
 
-/** Puts a [name] element in place of [script], with the script's `id`, `class` and `style`. */
-private fun replaceWithTag(script: Element, name: String): HTMLElement {
+/**
+ * Puts a [name] element in place of [script], with the script's `id`, `class` and `style`. A script in `<head>`, as in
+ * a page without `<body>`, gets its element in `<body>` before [bodyStart] instead, since `<head>` is never shown.
+ */
+private fun replaceWithTag(script: Element, name: String, bodyStart: Node?): HTMLElement {
     val tag = document.createElement(name) as HTMLElement
     for (attribute in listOf("id", "class", "style")) {
         script.getAttribute(attribute)?.let { tag.setAttribute(attribute, it) }
     }
-    script.replaceWith(tag)
+    val body = document.body
+    if (body != null && script.closest("head") != null) {
+        body.insertBefore(tag, bodyStart)
+        script.remove()
+    } else {
+        script.replaceWith(tag)
+    }
     return tag
 }
 
