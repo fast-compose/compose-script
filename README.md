@@ -27,8 +27,8 @@ Add the library to your page:
 ```
 
 - Load `compose-script.js` with a plain `<script src>`, not `type="module"`: it loads its `.wasm` files from its own URL.
-- The URL serves the latest version. To pin one, add it after the package name, e.g. `compose-script@X.Y.Z`. Each
-  version is built with the newest Fast Compose release of its time, named in its npm description.
+- The URL points to the latest release. Without the `@X.Y.Z` part, the CDN serves the newest release instead. Each
+  release is built with the newest Fast Compose release of its time, named in its npm description.
 
 Then write Compose anywhere in the page:
 

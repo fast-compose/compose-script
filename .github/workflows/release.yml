@@ -1,6 +1,7 @@
-# Push tag vX.Y.Z to release compose-script X.Y.Z: builds it with the newest fast-compose release on Maven Central and
+# Push tag vX.Y.Z to release compose-script X.Y.Z: builds it with the newest fast-compose release on Maven Central,
 # publishes it to npm, which jsDelivr serves at
 # https://cdn.jsdelivr.net/npm/@fast-compose/compose-script@X.Y.Z/compose-script.js
+# then creates a GitHub release and points the README's script URL at X.Y.Z.
 name: Release
 
 on:
@@ -8,7 +9,7 @@ on:
     tags: [ "v*" ]
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
@@ -38,14 +39,20 @@ jobs:
       - name: Build
         run: |
           chmod +x gradlew
-          COMPOSE_SCRIPT_VERSION=${VERSION#v} ./gradlew wasmJsBrowserDistribution -PfastComposeVersion=$ENGINE --no-build-cache
+          COMPOSE_SCRIPT_VERSION=${VERSION#v} ./gradlew wasmJsBrowserDistribution \
+            -PfastComposeVersion=$ENGINE --no-build-cache
 
+      # The npm README gets this version in its script URL, and its logo from the tagged source on GitHub.
       - name: Package
         run: |
           out=build/dist/wasmJs/productionExecutable
           mkdir -p dist
           cp $out/*.js $out/*.js.LICENSE.txt $out/*.wasm dist/
           cp README.md LICENSE dist/
+          sed -E -i \
+            -e "s#(@fast-compose/compose-script)(@[^/\"]*)?/compose-script\.js#\1@${VERSION#v}/compose-script.js#g" \
+            -e "s#src=\"docs/#src=\"https://raw.githubusercontent.com/fast-compose/compose-script/$VERSION/docs/#g" \
+            dist/README.md
           cat > dist/package.json <<JSON
           {
             "name": "@fast-compose/compose-script",
@@ -71,3 +78,21 @@ jobs:
         run: |
           npm install -g npm@latest
           npm publish --access public
+
+      # Only GitHub's source archives are attached.
+      - uses: softprops/action-gh-release@v3
+        with:
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+
+      - name: Use this version in the README on main
+        run: |
+          git fetch origin main
+          git checkout -B main origin/main
+          sed -E -i "s#(@fast-compose/compose-script)(@[^/\"]*)?/compose-script\.js#\1@${VERSION#v}/compose-script.js#g" \
+            README.md
+          if git diff --quiet; then echo "README already uses ${VERSION#v}"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "docs: use ${VERSION#v} in README"
+          git push origin main
