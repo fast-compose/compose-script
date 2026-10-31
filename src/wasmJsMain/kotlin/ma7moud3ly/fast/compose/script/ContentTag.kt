@@ -42,6 +42,8 @@ internal fun ContentTag(tag: HTMLElement, source: String, entry: String?) {
     }
     Column(
         Modifier
+            // Before measureWithin, so it covers the whole canvas rather than the content's size.
+            .transparentBackground()
             .measureWithin((available.first * density).roundToInt(), (available.second * density).roundToInt())
             .onSizeChanged { size ->
                 if (fixed.width && fixed.height) return@onSizeChanged
