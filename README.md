@@ -1,10 +1,24 @@
+<div align="center">
+
+<img src="docs/images/logo.png" width="160" alt="Compose Script logo">
+
 # Compose Script
+
+**Live Jetpack Compose inside any web page. No build, no server.**
+
+Add one script, write Compose in your HTML, and it renders in the page, powered by
+[Fast Compose](https://github.com/fast-compose/fast-compose).
 
 [![npm](https://img.shields.io/npm/v/@fast-compose/compose-script)](https://www.npmjs.com/package/@fast-compose/compose-script)
 [![jsDelivr](https://data.jsdelivr.com/v1/package/npm/@fast-compose/compose-script/badge)](https://www.jsdelivr.com/package/npm/@fast-compose/compose-script)
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+![Kotlin/Wasm](https://img.shields.io/badge/Kotlin-Wasm-7F52FF?logo=kotlin&logoColor=white)
 
-Live Compose inside static HTML pages, powered by [Fast Compose](https://github.com/fast-compose/fast-compose).
+</div>
+
+---
+
+## Quick start
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@fast-compose/compose-script/compose-script.js"></script>
@@ -16,8 +30,8 @@ Live Compose inside static HTML pages, powered by [Fast Compose](https://github.
 ```
 
 - Load `compose-script.js` with a plain `<script src>`, not `type="module"`: it loads its `.wasm` files from its own URL.
-- The URL serves the latest version. To pin one, add it after the package name, e.g. `compose-script@X.Y.Z`; each
-  version runs the Fast Compose engine of the same version.
+- The URL serves the latest version. To pin one, add it after the package name, e.g. `compose-script@X.Y.Z`. Each
+  version is built with the newest Fast Compose release of its time, named in its npm description.
 
 ## Script types
 
