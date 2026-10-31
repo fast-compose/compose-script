@@ -3,9 +3,7 @@ package ma7moud3ly.fast.compose.script
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeViewport
 import kotlinx.browser.document
-import org.w3c.dom.Element
 import org.w3c.dom.HTMLElement
-import org.w3c.dom.Node
 
 /** Shows every `@Preview` function of its code, with labels and frames. */
 private const val PREVIEW_TAG = "compose-preview"
@@ -14,62 +12,27 @@ private const val PREVIEW_TAG = "compose-preview"
 private const val CONTENT_TAG = "compose-content"
 
 /**
- * Default look of the tags. `:where` keeps their specificity at zero, so any page style overrides them.
- * Compose sizes its canvas from the tag, so a preview tag needs a height before it starts. A content tag sits in the
- * text flow like an image, starting at 1 × 1 px until its composable is measured.
- */
-private const val DEFAULT_STYLE = """
-:where($PREVIEW_TAG) { display: block; height: 400px; }
-:where($CONTENT_TAG) { display: inline-block; width: 1px; height: 1px; }
-"""
-
-/**
- * Replaces every `<script type="text/compose-preview">` and `<script type="text/compose-content">` on the page with a
- * `<compose-preview>` or `<compose-content>` tag that shows its code in a Compose viewport once it scrolls into view.
- * Scripts keep their code as written, so `<` and `>` need no escaping.
+ * Starts every `<compose-preview>` and `<compose-content>` tag on the page once it scrolls into view. `loading.js` has
+ * already put each tag in place of its `<script type="text/compose-preview">` or `<script type="text/compose-content">`,
+ * with the script inside it. Scripts keep their code as written, so `<` and `>` need no escaping.
  */
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
-    addStyle(DEFAULT_STYLE)
     onDomReady {
-        val scripts = document.querySelectorAll("script[type='text/$PREVIEW_TAG'], script[type='text/$CONTENT_TAG']")
-        val bodyStart = document.body?.firstChild
-        for (i in 0 until scripts.length) {
-            val script = scripts.item(i) as? Element ?: continue
-            val isPreview = script.getAttribute("type") == "text/$PREVIEW_TAG"
+        val tags = document.querySelectorAll("$PREVIEW_TAG, $CONTENT_TAG")
+        for (i in 0 until tags.length) {
+            val tag = tags.item(i) as? HTMLElement ?: continue
+            val script = tag.querySelector("script") ?: continue
+            val isPreview = tag.localName == PREVIEW_TAG
             val source = script.textContent.orEmpty().trimIndent()
             val entry = script.getAttribute("data-composable")?.trim()?.takeIf { it.isNotEmpty() }
-            val tag = replaceWithTag(script, if (isPreview) PREVIEW_TAG else CONTENT_TAG, bodyStart)
             whenVisible(tag) {
+                tag.removeAttribute("data-loading")
+                // Clears the tag, script included, before drawing.
                 ComposeViewport(tag) {
                     if (isPreview) PreviewTag(source) else ContentTag(tag, source, entry)
                 }
             }
         }
     }
-}
-
-/**
- * Puts a [name] element in place of [script], with the script's `id`, `class` and `style`. A script in `<head>`, as in
- * a page without `<body>`, gets its element in `<body>` before [bodyStart] instead, since `<head>` is never shown.
- */
-private fun replaceWithTag(script: Element, name: String, bodyStart: Node?): HTMLElement {
-    val tag = document.createElement(name) as HTMLElement
-    for (attribute in listOf("id", "class", "style")) {
-        script.getAttribute(attribute)?.let { tag.setAttribute(attribute, it) }
-    }
-    val body = document.body
-    if (body != null && script.closest("head") != null) {
-        body.insertBefore(tag, bodyStart)
-        script.remove()
-    } else {
-        script.replaceWith(tag)
-    }
-    return tag
-}
-
-private fun addStyle(css: String) {
-    val style = document.createElement("style")
-    style.textContent = css
-    document.head?.appendChild(style)
 }

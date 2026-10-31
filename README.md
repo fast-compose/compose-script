@@ -59,6 +59,10 @@ Each script is replaced by a `<compose-content>` or `<compose-preview>` element 
 `style`, so pages can style them with CSS. Parse and runtime errors appear inside the element, and each one starts
 when it scrolls into view.
 
+While the `.wasm` files download, each element shows a soft loading animation, 160 × 48 px for `compose-content`
+unless the script's `style` sets a size. Pages can restyle it with the `[data-loading]` attribute, e.g.
+`compose-content[data-loading] { background: #eee; }`.
+
 ## compose-content
 
 ### Body of a composable
