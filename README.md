@@ -23,7 +23,7 @@ Add one script, write Compose in your HTML, and it renders in the page, powered 
 Add the library to your page:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@fast-compose/compose-script@0.1.4/compose-script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fast-compose/compose-script@0.2.0/compose-script.js"></script>
 ```
 
 - Load `compose-script.js` with a plain `<script src>`, not `type="module"`: it loads its `.wasm` files from its own URL.
