@@ -79,10 +79,14 @@ jobs:
           npm install -g npm@latest
           npm publish --access public
 
+      # Titled with the bare version, so v0.1.4 is released as 0.1.4.
+      - name: Name the release
+        run: echo "RELEASE_NAME=${VERSION#v}" >> $GITHUB_ENV
+
       # Only GitHub's source archives are attached.
       - uses: softprops/action-gh-release@v3
         with:
-          name: ${{ github.ref_name }}
+          name: ${{ env.RELEASE_NAME }}
           generate_release_notes: true
 
       - name: Use this version in the README on main
