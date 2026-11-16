@@ -42,6 +42,16 @@ jobs:
           COMPOSE_SCRIPT_VERSION=${VERSION#v} ./gradlew wasmJsBrowserDistribution \
             -PfastComposeVersion=$ENGINE --no-build-cache
 
+      # Fails if a minified Skia export wrapper still calls Wasm as a tail call, e.g. (...e)=>(y=k._.malloc)(...e), so
+      # the Safari 27.2 workaround (skiko-no-tail-call-loader.cjs) can't be dropped silently.
+      - name: Check the Safari 27.2 workaround
+        run: |
+          bundle=build/dist/wasmJs/productionExecutable/compose-script.js
+          left=$(grep -oE '\(\.\.\.\w+\)=>\(\w+=\w+\._\.\w+\)\(\.\.\.\w+\)' $bundle | wc -l)
+          patched=$(grep -o 'try{return(' $bundle | wc -l)
+          echo "Skia wrappers: $patched patched, $left tail calls left"
+          test "$left" -eq 0 && test "$patched" -gt 0
+
       # The npm README gets this version in its script URL, and its logo from the tagged source on GitHub.
       - name: Package
         run: |
