@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/@fast-compose/compose-script/compose-script.js"></script>
+</head>
+<body>
+
+<script type="text/compose-content" data-composable="DinoGame">
+    @Composable
+    fun DinoGame() {
+        val dinoX = 48f
+        val dinoWidth = 28f
+        val dinoHeight = 32f
+        val groundFromBottom = 34f
+        val flyAltitude = 56f
+
+        // States: "READY", "RUNNING", "GAME_OVER"
+        var gameState by remember { mutableStateOf("READY") }
+        var score by remember { mutableIntStateOf(0) }
+        var highScore by remember { mutableIntStateOf(0) }
+        var tick by remember { mutableIntStateOf(0) }
+        var flyHack by remember { mutableStateOf(false) }
+
+        // Logical width/height (updated dynamically from Canvas size)
+        var fieldWidth by remember { mutableFloatStateOf(360f) }
+        var fieldHeight by remember { mutableFloatStateOf(160f) }
+
+        // Dino physics (dinoY is height above ground; 0f = on ground)
+        var dinoY by remember { mutableFloatStateOf(0f) }
+        var velocityY by remember { mutableFloatStateOf(0f) }
+
+        // Obstacle state
+        var cactusX by remember { mutableFloatStateOf(420f) }
+        var cactusWidth by remember { mutableFloatStateOf(16f) }
+        var cactusHeight by remember { mutableFloatStateOf(32f) }
+
+        // Decorative cloud positions
+        var cloud1X by remember { mutableFloatStateOf(120f) }
+        var cloud2X by remember { mutableFloatStateOf(280f) }
+
+        val focusRequester = remember { FocusRequester() }
+        val noRippleInteraction = remember { MutableInteractionSource() }
+
+        fun spawnCactus(startX: Float) {
+            cactusX = startX
+            val variant = Random.nextInt(3)
+            when (variant) {
+                0 -> { cactusWidth = 14f; cactusHeight = 26f }
+                1 -> { cactusWidth = 18f; cactusHeight = 36f }
+                else -> { cactusWidth = 26f; cactusHeight = 28f }
+            }
+        }
+
+        fun triggerJumpOrStart() {
+            if (gameState != "RUNNING") {
+                score = 0
+                dinoY = if (flyHack) flyAltitude else 0f
+                velocityY = if (flyHack) 0f else 12.4f
+                spawnCactus(fieldWidth + 50f)
+                gameState = "RUNNING"
+            } else if (!flyHack && dinoY <= 0.5f) {
+                velocityY = 12.4f
+            }
+        }
+
+        LaunchedEffect(Unit) {
+            try {
+                focusRequester.requestFocus()
+            } catch (_: Throwable) {
+            }
+        }
+
+        LaunchedEffect(flyHack) {
+            if (flyHack) {
+                velocityY = 0f
+                if (dinoY < flyAltitude) {
+                    dinoY = flyAltitude
+                }
+            } else if (dinoY > 0f && velocityY == 0f) {
+                velocityY = -2f
+            }
+        }
+
+        LaunchedEffect(gameState) {
+            while (gameState == "RUNNING") {
+                delay(32)
+                tick += 1
+
+                val speed = (8.2f + score * 0.0075f).coerceAtMost(17.5f)
+
+                if (flyHack) {
+                    velocityY = 0f
+                    dinoY = flyAltitude + kotlin.math.sin(tick * 0.25f) * 3f
+                } else if (dinoY > 0f || velocityY > 0f) {
+                    dinoY += velocityY
+                    velocityY -= 0.98f
+                    if (dinoY <= 0f) {
+                        dinoY = 0f
+                        velocityY = 0f
+                    }
+                }
+
+                cactusX -= speed
+                if (cactusX + cactusWidth < 0f) {
+                    spawnCactus(fieldWidth + Random.nextInt(45, 175).toFloat())
+                }
+
+                cloud1X -= speed * 0.25f
+                if (cloud1X < -50f) cloud1X = fieldWidth + 30f
+                cloud2X -= speed * 0.18f
+                if (cloud2X < -50f) cloud2X = fieldWidth + 70f
+
+                if (tick % 2 == 0) {
+                    score += 1
+                    if (score > highScore) highScore = score
+                }
+
+                val pad = 4f
+                val dinoLeft = dinoX + pad
+                val dinoRight = dinoX + dinoWidth - pad
+                val dinoBottom = dinoY
+
+                val cactusLeft = cactusX + 2f
+                val cactusRight = cactusX + cactusWidth - 2f
+
+                val horizontalOverlap = dinoRight > cactusLeft && dinoLeft < cactusRight
+                val verticalOverlap = dinoBottom < (cactusHeight - 3f)
+
+                if (horizontalOverlap && verticalOverlap) {
+                    gameState = "GAME_OVER"
+                }
+            }
+        }
+
+        val dinoColor = Color(0xFF535353)
+        val bgColor = Color(0xFFF7F7F7)
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(bgColor)
+                .border(2.dp, Color(0xFFDADADA))
+                .focusRequester(focusRequester)
+                .focusable()
+                .onPreviewKeyEvent { event ->
+                    if (event.type == KeyEventType.KeyDown &&
+                        (event.key == Key.Spacebar || event.key == Key.Enter || event.key == Key.NumPadEnter)
+                    ) {
+                        triggerJumpOrStart()
+                        true
+                    } else {
+                        false
+                    }
+                }
+                .clickable(
+                    interactionSource = noRippleInteraction,
+                    indication = null
+                ) {
+                    try {
+                        focusRequester.requestFocus()
+                    } catch (_: Throwable) {
+                    }
+                    triggerJumpOrStart()
+                }
+                .padding(12.dp)
+        ) {
+            // Top-Left Scores + Fly Hack Button Directly Underneath
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.Start,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = "HI ${highScore.toString().padStart(5, '0')}   ${score.toString().padStart(5, '0')}",
+                    color = dinoColor,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(if (flyHack) Color(0xFF2E7D32) else Color(0xFFE0E0E0))
+                        .clickable {
+                            flyHack = !flyHack
+                            try {
+                                focusRequester.requestFocus()
+                            } catch (_: Throwable) {
+                            }
+                        }
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text(
+                        text = if (flyHack) "Fly: ON" else "Fly",
+                        color = if (flyHack) Color.White else dinoColor,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Main Fillable Game Area
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val logicalW = (size.width / density).coerceAtLeast(180f)
+                    val logicalH = (size.height / density).coerceAtLeast(120f)
+                    if (fieldWidth != logicalW) fieldWidth = logicalW
+                    if (fieldHeight != logicalH) fieldHeight = logicalH
+
+                    val scaleX = size.width / fieldWidth
+                    val scaleY = size.height / fieldHeight
+                    val groundY = size.height - groundFromBottom * scaleY
+
+                    // Clouds
+                    val cloudColor = Color(0xFFDCDCDC)
+                    drawRoundRect(
+                        color = cloudColor,
+                        topLeft = Offset(cloud1X * scaleX, 26f * scaleY),
+                        size = Size(34f * scaleX, 10f * scaleY),
+                        cornerRadius = CornerRadius(5f * scaleX, 5f * scaleY)
+                    )
+                    drawRoundRect(
+                        color = cloudColor,
+                        topLeft = Offset(cloud2X * scaleX, 46f * scaleY),
+                        size = Size(42f * scaleX, 11f * scaleY),
+                        cornerRadius = CornerRadius(5f * scaleX, 5f * scaleY)
+                    )
+
+                    // Ground line & scrolling pebbles
+                    drawLine(
+                        color = dinoColor,
+                        start = Offset(0f, groundY),
+                        end = Offset(size.width, groundY),
+                        strokeWidth = 2f * scaleY
+                    )
+                    val pebbleSpan = 40f
+                    val pebbleCount = (fieldWidth / pebbleSpan).toInt() + 2
+                    val scrollShift = (tick * speedForDisplay(score)) % pebbleSpan
+                    for (i in 0..pebbleCount) {
+                        val pebbleX = ((i * pebbleSpan - scrollShift) + fieldWidth) % fieldWidth
+                        drawRect(
+                            color = Color(0xFF9E9E9E),
+                            topLeft = Offset(pebbleX * scaleX, groundY + 5f * scaleY),
+                            size = Size(6f * scaleX, 2f * scaleY)
+                        )
+                    }
+
+                    // Cactus Obstacle
+                    val cLeft = cactusX * scaleX
+                    val cTop = groundY - cactusHeight * scaleY
+                    val cW = cactusWidth * scaleX
+                    val cH = cactusHeight * scaleY
+
+                    drawRoundRect(
+                        color = Color(0xFF2E7D32),
+                        topLeft = Offset(cLeft + cW * 0.25f, cTop),
+                        size = Size(cW * 0.5f, cH),
+                        cornerRadius = CornerRadius(3f * scaleX, 3f * scaleY)
+                    )
+                    drawRoundRect(
+                        color = Color(0xFF2E7D32),
+                        topLeft = Offset(cLeft, cTop + cH * 0.3f),
+                        size = Size(cW * 0.3f, cH * 0.35f),
+                        cornerRadius = CornerRadius(2f * scaleX, 2f * scaleY)
+                    )
+                    drawRoundRect(
+                        color = Color(0xFF2E7D32),
+                        topLeft = Offset(cLeft + cW * 0.7f, cTop + cH * 0.2f),
+                        size = Size(cW * 0.3f, cH * 0.35f),
+                        cornerRadius = CornerRadius(2f * scaleX, 2f * scaleY)
+                    )
+
+                    // T-Rex Character
+                    val dLeft = dinoX * scaleX
+                    val dTop = groundY - (dinoHeight + dinoY) * scaleY
+                    val dW = dinoWidth * scaleX
+                    val dH = dinoHeight * scaleY
+
+                    drawRoundRect(
+                        color = dinoColor,
+                        topLeft = Offset(dLeft + dW * 0.35f, dTop),
+                        size = Size(dW * 0.65f, dH * 0.38f),
+                        cornerRadius = CornerRadius(3f * scaleX, 3f * scaleY)
+                    )
+                    drawRect(
+                        color = bgColor,
+                        topLeft = Offset(dLeft + dW * 0.52f, dTop + dH * 0.1f),
+                        size = Size(3.5f * scaleX, 3.5f * scaleY)
+                    )
+                    drawRoundRect(
+                        color = dinoColor,
+                        topLeft = Offset(dLeft + dW * 0.2f, dTop + dH * 0.34f),
+                        size = Size(dW * 0.52f, dH * 0.44f),
+                        cornerRadius = CornerRadius(3f * scaleX, 3f * scaleY)
+                    )
+                    drawRect(
+                        color = dinoColor,
+                        topLeft = Offset(dLeft, dTop + dH * 0.42f),
+                        size = Size(dW * 0.24f, dH * 0.22f)
+                    )
+                    drawRect(
+                        color = dinoColor,
+                        topLeft = Offset(dLeft + dW * 0.72f, dTop + dH * 0.46f),
+                        size = Size(dW * 0.18f, dH * 0.1f)
+                    )
+
+                    val legAnimStep = if (score > 400) 2 else 3
+                    val stepToggle = (tick / legAnimStep) % 2 == 0
+                    val onGround = dinoY <= 0.5f
+                    val leftLegH = if (gameState == "RUNNING" && onGround && stepToggle) dH * 0.14f else dH * 0.24f
+                    val rightLegH = if (gameState == "RUNNING" && onGround && !stepToggle) dH * 0.14f else dH * 0.24f
+
+                    drawRect(
+                        color = dinoColor,
+                        topLeft = Offset(dLeft + dW * 0.28f, dTop + dH * 0.76f),
+                        size = Size(dW * 0.14f, leftLegH)
+                    )
+                    drawRect(
+                        color = dinoColor,
+                        topLeft = Offset(dLeft + dW * 0.52f, dTop + dH * 0.76f),
+                        size = Size(dW * 0.14f, rightLegH)
+                    )
+                }
+
+                if (gameState != "RUNNING") {
+                    Column(
+                        modifier = Modifier
+                            .background(Color(0xE6F7F7F7), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = if (gameState == "READY") "PRESS SPACE / ENTER OR TAP" else "G A M E   O V E R",
+                            color = dinoColor,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            text = if (gameState == "READY") "Dodge the cacti" else "Press Space / Enter or tap to restart",
+                            color = Color(0xFF757575),
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun speedForDisplay(score: Int): Float = (8.2f + score * 0.0075f).coerceAtMost(17.5f)
+</script>
+
+</body>
+</html>
